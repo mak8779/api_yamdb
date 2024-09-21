@@ -1,5 +1,6 @@
 from rest_framework import serializers
 from rest_framework.relations import SlugRelatedField
+import datetime
 
 from reviews.models import Category, Genre, Title, User
 
@@ -26,6 +27,13 @@ class TitleSerializer(serializers.ModelSerializer):
                                 queryset=Category.objects.all())
     genre = SlugRelatedField(slug_field='slug',
                              queryset=Genre.objects.all(), many=True)
+
+    def validate_year(self, value):
+        if value > datetime.date.today().year:
+            raise serializers.ValidationError(
+                'Будущий год нельзя ставить'
+            )
+        return value
 
     class Meta:
         fields = ('id', 'name', 'year', 'description', 'genre', 'category')
