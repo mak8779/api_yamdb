@@ -7,6 +7,8 @@ from api.serializers import (CategorySerializer, GenreSerializer,
 
 from reviews.models import Category, Genre, Title, User
 
+#from api.permissions import IsAdminOrReadOnly
+
 
 class CategoryViewSet(viewsets.ModelViewSet):
     """Вьюсет групп категорий."""
@@ -16,6 +18,7 @@ class CategoryViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     pagination_class = LimitOffsetPagination
+    # permission_classes = (IsAdminOrReadOnly,)
 
 
 class UserViewSet(viewsets.ReadOnlyModelViewSet):
@@ -33,6 +36,7 @@ class GenreViewSet(viewsets.ModelViewSet):
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
     pagination_class = LimitOffsetPagination
+    # permission_classes = (IsAdminOrReadOnly,)
 
 
 class TitleViewSet(viewsets.ModelViewSet):

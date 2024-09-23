@@ -1,4 +1,5 @@
-import argparse, csv
+import csv
+from django.conf import settings
 
 from django.core.management.base import BaseCommand, CommandParser
 
@@ -13,7 +14,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **kwargs):
         #category = kwargs['category']
-        with open('setting.BASE_DIR/static/data/category.csv', 'r', encoding='utf-8') as f:
+        with open('settings.BASE_DIR/static/data/category.csv', 'r', encoding='utf-8') as f:
             reader = csv.DictReader(f)
             Category.objects.bulk_create(Category(**row) for row in reader)
                 # category = Category()
