@@ -1,13 +1,14 @@
 import random
 
+from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner
 from api.serializers import (MeSerializer, SignupSerializer, TokenSerializer,
                              UserSerializer)
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import generics, status, viewsets
+from rest_framework import filters, generics, status, viewsets
 from rest_framework.decorators import action
-from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner
+from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
@@ -114,7 +115,9 @@ class TokenView(generics.CreateAPIView):
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAdminOrReadOnly]
+    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    filter_backends = [filters.SearchFilter]
+    search_fields = ['username']
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -122,40 +125,49 @@ class UserViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         return Response(serializer.data, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['get'], url_path=r'(?P<username>[^/.]+)')
-    def get_user_by_username(self, request, username=None):
+    def update(self, request, *args, **kwargs):
+        return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
+
+    def retrieve(self, request, *args, **kwargs):
+        username = kwargs.get('pk')
         user = get_object_or_404(User, username=username)
         serializer = self.get_serializer(user)
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['patch'], url_path=r'(?P<username>[^/.]+)')
-    def update_user_by_username(self, request, username=None):
+    def partial_update(self, request, *args, **kwargs):
+        username = kwargs.get('pk')
         user = get_object_or_404(User, username=username)
         serializer = self.get_serializer(user, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        return Response(serializer.data)
+        return Response(serializer.data, status=status.HTTP_200_OK)
 
-    @action(detail=False, methods=['delete'], url_path=r'(?P<username>[^/.]+)')
-    def delete_user_by_username(self, request, username=None):
+    def destroy(self, request, *args, **kwargs):
+        username = kwargs.get('pk')
         user = get_object_or_404(User, username=username)
         user.delete()
         return Response(status=status.HTTP_204_NO_CONTENT)
 
-    @action(detail=False,
-            methods=['get', 'patch'],
-            permission_classes=[IsModeratorOrOwner],
-            url_path='me'
-            )
+    @action(
+        detail=False,
+        methods=['get', 'patch'],
+        permission_classes=[IsAuthenticated, IsModeratorOrOwner],
+        url_path='me'
+    )
     def me(self, request):
         if request.method == 'GET':
             serializer = MeSerializer(request.user)
             return Response(serializer.data)
         elif request.method == 'PATCH':
+            if 'role' in request.data:
+                return Response(
+                    {"detail": "Роль нельзя изменить."},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
+
             serializer = MeSerializer(
                 request.user,
-                data=request.data,
-                partial=True
+                data=request.data, partial=True
             )
             serializer.is_valid(raise_exception=True)
             serializer.save()
