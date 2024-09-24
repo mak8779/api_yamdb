@@ -18,21 +18,56 @@ class SignupView(generics.CreateAPIView):
     serializer_class = SignupSerializer
 
     def post(self, request, *args, **kwargs):
+        required_fields = ['username', 'email']
+        missing_fields = [
+            field for field in required_fields if field not in request.data
+        ]
+
+        if missing_fields:
+            error_response = {
+                field: ['Обязательное поле.'] for field in missing_fields
+            }
+            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
+
         serializer = self.get_serializer(data=request.data)
+
         if serializer.is_valid(raise_exception=True):
-            email = serializer.validated_data['email']
             username = serializer.validated_data['username']
-            confirmation_code = str(random.randint(100000, 999999))
 
-            user, created = User.objects.get_or_create(
-                username=username,
-                email=email,
-                defaults={'confirmation_code': confirmation_code}
-            )
+            if username.lower() == 'me':
+                return Response(
+                    {'username': ['Юзернейм "me" не разрешен.']},
+                    status=status.HTTP_400_BAD_REQUEST
+                )
 
-            if not created:
+            email = serializer.validated_data['email']
+
+            user = User.objects.filter(username=username, email=email).first()
+
+            if user:
+                confirmation_code = str(random.randint(100000, 999999))
                 user.confirmation_code = confirmation_code
                 user.save()
+
+                send_mail(
+                    'Код подтверждения',
+                    f'Ваш код подтверждения: {confirmation_code}',
+                    'noreply@yamdb.com',
+                    [email],
+                    fail_silently=False,
+                )
+
+                return Response(
+                    {'email': email, 'username': username},
+                    status=status.HTTP_200_OK
+                )
+
+            confirmation_code = str(random.randint(100000, 999999))
+            user = User.objects.create(
+                username=username,
+                email=email,
+                confirmation_code=confirmation_code
+            )
 
             send_mail(
                 'Код подтверждения',
@@ -55,6 +90,13 @@ class TokenView(generics.CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+
+        if 'username' not in request.data:
+            return Response(
+                {'detail': 'Username - обязательное поле.'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
         if serializer.is_valid(raise_exception=True):
             user = User.objects.get(
                 username=serializer.validated_data['username']
