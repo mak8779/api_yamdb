@@ -34,3 +34,26 @@ class TokenSerializer(serializers.Serializer):
             raise serializers.ValidationError('Неверный код подтверждения.')
 
         return data
+
+
+class UserSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = [
+            'username',
+            'email',
+            'first_name',
+            'last_name',
+            'bio',
+            'role'
+        ]
+        extra_kwargs = {
+            'email': {'required': True},
+            'username': {'required': True}
+        }
+
+
+class MeSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = User
+        fields = ['username', 'email', 'first_name', 'last_name', 'bio']

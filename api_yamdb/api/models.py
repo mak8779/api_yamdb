@@ -16,6 +16,10 @@ class User(AbstractUser):
         choices=ROLE_CHOICES,
         default='user'
     )
+    bio = models.TextField(
+        blank=True,
+        verbose_name='О себе'
+    )
 
     @property
     def is_moderator(self):
