@@ -1,3 +1,4 @@
+import os
 from datetime import timedelta
 from pathlib import Path
 
@@ -124,4 +125,7 @@ SIMPLE_JWT = {
 }
 
 EMAIL_BACKEND = 'django.core.mail.backends.filebased.EmailBackend'
-EMAIL_FILE_PATH = '/tmp/app-messages'
+EMAIL_FILE_PATH = os.path.join(BASE_DIR, 'tmp', 'app-messages')
+
+if not os.path.exists(EMAIL_FILE_PATH):
+    os.makedirs(EMAIL_FILE_PATH)
