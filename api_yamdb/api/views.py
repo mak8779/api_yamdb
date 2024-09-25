@@ -3,7 +3,8 @@ from rest_framework import filters, mixins, viewsets
 from django_filters.rest_framework import DjangoFilterBackend
 
 from api.serializers import (CategorySerializer, GenreSerializer,
-                             TitleSerializer, UserSerializer)
+                             TitleSerializer, TitleViewSerializer,
+                             UserSerializer)
 
 from reviews.models import Category, Genre, Title, User
 
@@ -21,7 +22,7 @@ class CreateListDestroyViewSet(mixins.CreateModelMixin,
 class CategoryViewSet(CreateListDestroyViewSet):
     """Вьюсет групп категорий."""
 
-    queryset = Category.objects.all()
+    queryset = Category.objects.all().order_by('id')
     serializer_class = CategorySerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -40,7 +41,7 @@ class UserViewSet(viewsets.ReadOnlyModelViewSet):
 class GenreViewSet(CreateListDestroyViewSet):
     """Вьюсет групп жанров."""
 
-    queryset = Genre.objects.all()
+    queryset = Genre.objects.all().order_by('id')
     serializer_class = GenreSerializer
     filter_backends = (filters.SearchFilter,)
     search_fields = ('name',)
@@ -56,3 +57,8 @@ class TitleViewSet(viewsets.ModelViewSet):
     filter_backends = (DjangoFilterBackend, filters.SearchFilter)
     filterset_fields = ('category', 'genre', 'name', 'year')
     # pagination_class = LimitOffsetPagination
+
+    def get_serializer_class(self):
+        if self.action in ('list', 'retrieve'):
+            return TitleViewSerializer
+        return TitleSerializer

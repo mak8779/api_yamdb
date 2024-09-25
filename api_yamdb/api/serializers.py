@@ -40,6 +40,16 @@ class TitleSerializer(serializers.ModelSerializer):
         model = Title
 
 
+class TitleViewSerializer(serializers.ModelSerializer):
+    """Сериализатор просмотра списка произведений."""
+    category = CategorySerializer(read_only=True)
+    genre = GenreSerializer(read_only=True, many=True)
+
+    class Meta:
+        fields = ('id', 'name', 'year', 'description', 'genre', 'category')
+        model = Title
+
+
 class UserSerializer(serializers.ModelSerializer):
     """Сериализатор модели пользователей."""
 
