@@ -9,6 +9,9 @@ from api.serializers import (CategorySerializer, GenreSerializer,
 from reviews.models import Category, Genre, Title, User
 
 from api.permissions import IsAdminOrReadOnly
+from api.filters import TitleFilter
+
+from django.contrib.auth import get_user_model
 
 
 class CreateListDestroyViewSet(mixins.CreateModelMixin,
@@ -52,11 +55,13 @@ class GenreViewSet(CreateListDestroyViewSet):
 
 class TitleViewSet(viewsets.ModelViewSet):
     """Вьюсет групп произведений."""
-    queryset = Title.objects.all()
+    queryset = Title.objects.all().order_by('name')
     serializer_class = TitleSerializer
-    filter_backends = (DjangoFilterBackend, filters.SearchFilter)
-    filterset_fields = ('category', 'genre', 'name', 'year')
-    # pagination_class = LimitOffsetPagination
+    filter_backends = (DjangoFilterBackend,)
+    permission_classes = (IsAdminOrReadOnly,)
+    http_method_names = ['get', 'post', 'patch', 'delete']
+    # pagination_class = PageNumberPagination
+    filterset_class = TitleFilter
 
     def get_serializer_class(self):
         if self.action in ('list', 'retrieve'):
