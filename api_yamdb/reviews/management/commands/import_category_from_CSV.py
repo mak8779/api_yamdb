@@ -3,22 +3,26 @@ from django.conf import settings
 
 from django.core.management.base import BaseCommand, CommandParser
 
-from reviews.models import Category
+from reviews.models import Category, Genre, Title, User
 
+IMPORT_CSV_FILES = {
+    # Category: 'category.csv',
+    # Genre: 'genre.csv',
+    Title: 'titles.csv',
+    # User: 'users.csv'
+}
 
 class Command(BaseCommand):
     help = 'Import CSV'
 
-    # def add_arguments(self, parser):
-    #     parser.add_argument('category', nargs='?', type=str, help='The path to the CSV file')
-
     def handle(self, *args, **kwargs):
-        #category = kwargs['category']
-        with open('settings.BASE_DIR/static/data/category.csv', 'r', encoding='utf-8') as f:
-            reader = csv.DictReader(f)
-            Category.objects.bulk_create(Category(**row) for row in reader)
-                # category = Category()
-                # category.name = row[0]
-                # category.slug = row[1]
-                # category.save()
-        self.stdout.write(self.style.SUCCESS('Все данные загружены'))
+        for model, file_CSV in IMPORT_CSV_FILES.items():
+            print(model, file_CSV)
+
+            with open(f'{settings.BASE_DIR}/static/data/{file_CSV}', 'r', encoding='utf-8') as f:
+
+                reader = csv.DictReader(f)
+                dump = [model(**row) for row in reader]
+                print(dump)
+                model.objects.bulk_create(dump)
+            self.stdout.write(self.style.SUCCESS('Данные загружены'))
