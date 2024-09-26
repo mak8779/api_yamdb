@@ -3,9 +3,10 @@ from rest_framework.permissions import BasePermission
 
 class IsAdminOrReadOnly(BasePermission):
     def has_permission(self, request, view):
-        if request.method in ['GET', 'HEAD', 'OPTIONS']:
-            return request.user.is_authenticated and request.user.is_admin
-        return request.user.is_authenticated and request.user.is_admin
+        return request.method in ['GET', 'HEAD', 'OPTIONS'] or (
+            request.user.is_authenticated
+            and (request.user.is_admin or request.user.is_superuser)
+        )
 
 
 class IsModeratorOrOwner(BasePermission):
