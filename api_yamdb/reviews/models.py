@@ -10,6 +10,9 @@ class Category(models.Model):
     slug = models.SlugField(unique=True, max_length=50,
                             verbose_name='Slug категории')
 
+    class Meta:
+        ordering = ['id']
+
     def __str__(self):
         return self.name
 
@@ -19,6 +22,9 @@ class Genre(models.Model):
     name = models.CharField(max_length=256, verbose_name='Название жанра')
     slug = models.SlugField(unique=True, max_length=50,
                             verbose_name='Slug жанра')
+
+    class Meta:
+        ordering = ['id']
 
     def __str__(self):
         return self.name
@@ -38,6 +44,9 @@ class Title(models.Model):
         related_name='titles',
         verbose_name='Категория произведения'
     )
+
+    class Meta:
+        ordering = ['id']
 
     def __str__(self):
         return self.name

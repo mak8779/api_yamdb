@@ -6,6 +6,9 @@ class User(AbstractUser):
     email = models.EmailField(unique=True, verbose_name='email')
     confirmation_code = models.CharField(max_length=6, blank=True, null=True)
 
+    class Meta:
+        ordering = ['id']
+
     ROLE_CHOICES = [
         ('user', 'Authenticated User'),
         ('moderator', 'Moderator'),
