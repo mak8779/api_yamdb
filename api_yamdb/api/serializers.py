@@ -1,11 +1,11 @@
-from rest_framework import serializers
-from rest_framework.relations import SlugRelatedField
 import datetime
 
-from reviews.models import Category, Genre, Title
-
 from django.contrib.auth import get_user_model
+from rest_framework import serializers
 from rest_framework.exceptions import NotFound
+from rest_framework.relations import SlugRelatedField
+
+from reviews.models import Category, Genre, Title
 
 User = get_user_model()
 

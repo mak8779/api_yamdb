@@ -1,27 +1,23 @@
-#from rest_framework.pagination import LimitOffsetPagination
-from django_filters.rest_framework import DjangoFilterBackend
-
-from api.serializers import (CategorySerializer, GenreSerializer,
-                             TitleSerializer, TitleViewSerializer,
-                             UserSerializer)
-
-from reviews.models import Category, Genre, Title
-
-from api.filters import TitleFilter
-
+# from rest_framework.pagination import LimitOffsetPagination
 import random
 
-from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner
-from api.serializers import (MeSerializer, SignupSerializer, TokenSerializer,
-                             UserSerializer)
 from django.contrib.auth import get_user_model
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
-from rest_framework import filters, generics, status, viewsets, mixins
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, generics, mixins, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.permissions import IsAuthenticated
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
+
+from api.filters import TitleFilter
+from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner
+from api.serializers import (CategorySerializer, GenreSerializer, MeSerializer,
+                             SignupSerializer, TitleSerializer,
+                             TitleViewSerializer, TokenSerializer,
+                             UserSerializer)
+from reviews.models import Category, Genre, Title
 
 User = get_user_model()
 
@@ -43,13 +39,6 @@ class CategoryViewSet(CreateListDestroyViewSet):
     # pagination_class = PageNumberPagination
     permission_classes = (IsAdminOrReadOnly,)
     lookup_field = 'slug'
-
-
-class UserViewSet(viewsets.ReadOnlyModelViewSet):
-    """Вьюсет пользователей."""
-
-    queryset = User.objects.all()
-    serializer_class = UserSerializer
 
 
 class GenreViewSet(CreateListDestroyViewSet):
@@ -184,6 +173,19 @@ class UserViewSet(viewsets.ModelViewSet):
     filter_backends = [filters.SearchFilter]
     search_fields = ['username']
 
+    def list(self, request, *args, **kwargs):
+        if not request.user.is_admin:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        return super().list(request, *args, **kwargs)
+
+    def retrieve(self, request, *args, **kwargs):
+        if not request.user.is_admin:
+            return Response(status=status.HTTP_403_FORBIDDEN)
+        username = kwargs.get('pk')
+        user = get_object_or_404(User, username=username)
+        serializer = self.get_serializer(user)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
         serializer.is_valid(raise_exception=True)
@@ -192,12 +194,6 @@ class UserViewSet(viewsets.ModelViewSet):
 
     def update(self, request, *args, **kwargs):
         return Response(status=status.HTTP_405_METHOD_NOT_ALLOWED)
-
-    def retrieve(self, request, *args, **kwargs):
-        username = kwargs.get('pk')
-        user = get_object_or_404(User, username=username)
-        serializer = self.get_serializer(user)
-        return Response(serializer.data, status=status.HTTP_200_OK)
 
     def partial_update(self, request, *args, **kwargs):
         username = kwargs.get('pk')
