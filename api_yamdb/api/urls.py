@@ -1,9 +1,15 @@
-from django.urls import path, include
-from rest_framework.routers import DefaultRouter
-from api.views import UserViewSet, SignupView, TokenView
+from django.urls import include, path
 
-router = DefaultRouter()
+from rest_framework import routers
+
+from api.views import (CategoryViewSet, GenreViewSet, TitleViewSet, UserViewSet, SignupView, TokenView)
+
+router = routers.DefaultRouter()
+router.register('categories', CategoryViewSet)
+router.register('genres', GenreViewSet)
+router.register('titles', TitleViewSet, basename='titles')
 router.register(r'users', UserViewSet, basename='users')
+
 
 urlpatterns = [
     path('v1/', include(router.urls)),
