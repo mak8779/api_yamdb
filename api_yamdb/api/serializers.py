@@ -1,6 +1,7 @@
 import datetime
 
 from django.contrib.auth import get_user_model
+from django.core.validators import RegexValidator
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework.relations import SlugRelatedField
@@ -56,8 +57,15 @@ class TitleViewSerializer(serializers.ModelSerializer):
 
 
 class SignupSerializer(serializers.Serializer):
-    email = serializers.EmailField(required=True)
-    username = serializers.CharField(required=True, max_length=150)
+    email = serializers.EmailField(required=True, max_length=254)
+    username = serializers.CharField(
+        required=True, 
+        max_length=150,
+        validators=[RegexValidator(
+            regex=r'^[\w.@+-]+\Z',
+            message='Недопустимые символы в username. Разрешены только буквы, цифры и символы @/./+/-/_'
+        )]
+    )
 
     def validate(self, data):
         email_exists = User.objects.filter(email=data['email']).exists()
