@@ -148,7 +148,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         """Запрещаем оставлять более одного отзыва на произведение."""
         if self.context['request'].method == 'POST' and Review.objects.filter(
                 title=self.context['view'].kwargs['title_id'], author=self.context['request'].user).exists():
-            raise ValidationError('Вы уже оставили отзыв на это произведение.')
+            raise serializers.ValidationError('Вы уже оставили отзыв на это произведение.')
         return data
 
     def create(self, validated_data):

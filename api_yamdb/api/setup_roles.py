@@ -1,4 +1,4 @@
-""" from django.contrib.auth.models import Group, Permission
+from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
 from reviews.models import Review, Comment
@@ -30,4 +30,3 @@ def setup_roles():
 
     admin_permissions = Permission.objects.all()
     admin_group.permissions.add(*admin_permissions)
- """

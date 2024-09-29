@@ -6,6 +6,6 @@ class ApiConfig(AppConfig):
     name = 'api'
     verbose_name = 'Отзывы'
 
-"""     def ready(self):
+    def ready(self):
         from .setup_roles import setup_roles
-        setup_roles() """
+        setup_roles()
