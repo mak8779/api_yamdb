@@ -2,6 +2,7 @@ import datetime
 
 from django.contrib.auth import get_user_model
 from django.core.validators import RegexValidator
+from django.db.models import Avg
 from rest_framework import serializers
 from rest_framework.exceptions import NotFound
 from rest_framework.relations import SlugRelatedField
@@ -43,19 +44,40 @@ class TitleSerializer(serializers.ModelSerializer):
         return value
 
     class Meta:
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'rating')
+        fields = (
+            'id',
+            'name',
+            'year',
+            'description',
+            'genre',
+            'category',
+            'rating'
+        )
         model = Title
 
 
 class TitleViewSerializer(serializers.ModelSerializer):
-    """Сериализатор просмотра списка произведений."""
-
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(read_only=True, many=True)
+    rating = serializers.SerializerMethodField()
 
     class Meta:
-        fields = ('id', 'name', 'year', 'description', 'genre', 'category', 'rating')
+        fields = (
+            'id',
+            'name',
+            'year',
+            'description',
+            'genre',
+            'category',
+            'rating'
+        )
         model = Title
+
+    def get_rating(self, obj):
+        reviews = obj.reviews.all()
+        if reviews.exists():
+            return reviews.aggregate(Avg('score'))['score__avg']
+        return None
 
 
 class SignupSerializer(serializers.Serializer):
@@ -65,7 +87,10 @@ class SignupSerializer(serializers.Serializer):
         max_length=150,
         validators=[RegexValidator(
             regex=r'^[\w.@+-]+\Z',
-            message='Недопустимые символы в username. Разрешены только буквы, цифры и символы @/./+/-/_'
+            message=(
+                'Недопустимые символы в username. Разрешены только буквы, '
+                'цифры и символы @/./+/-/_'
+            )
         )]
     )
 
@@ -146,9 +171,16 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     def validate(self, data):
         """Запрещаем оставлять более одного отзыва на произведение."""
-        if self.context['request'].method == 'POST' and Review.objects.filter(
-                title=self.context['view'].kwargs['title_id'], author=self.context['request'].user).exists():
-            raise serializers.ValidationError('Вы уже оставили отзыв на это произведение.')
+        if (
+            self.context['request'].method == 'POST'
+            and Review.objects.filter(
+                title=self.context['view'].kwargs['title_id'],
+                author=self.context['request'].user
+            ).exists()
+        ):
+            raise serializers.ValidationError(
+                'Вы уже оставили отзыв на это произведение.'
+            )
         return data
 
     def create(self, validated_data):

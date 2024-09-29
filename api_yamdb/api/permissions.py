@@ -17,7 +17,7 @@ class IsModeratorOrOwner(BasePermission):
         if request.method in SAFE_METHODS:
             return True
         return (
-                obj.author == request.user or
-                request.user.is_moderator or
-                request.user.is_admin
+            obj.author == request.user
+            or request.user.is_moderator
+            or request.user.is_admin
         )
