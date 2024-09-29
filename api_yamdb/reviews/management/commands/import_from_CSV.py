@@ -10,9 +10,9 @@ IMPORT_CSV_FILES = {
     Genre: 'genre.csv',
     Title: 'titles.csv',
     GenreTitle: 'genre_title.csv',
+    User: 'users.csv',
     Review: 'review.csv',
     Comment: 'comments.csv',
-    User: 'users.csv',
 }
 
 
