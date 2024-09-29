@@ -1,10 +1,10 @@
 from django.contrib.auth.models import Group, Permission
 from django.contrib.contenttypes.models import ContentType
 
-from reviews.models import Review, Comment
+from reviews.models import Comment, Review
 
 
-def setup_roles():
+def setup_roles(sender, **kwargs):
     user_group, created = Group.objects.get_or_create(name='User')
     moderator_group, created = Group.objects.get_or_create(name='Moderator')
     admin_group, created = Group.objects.get_or_create(name='Admin')
@@ -17,7 +17,8 @@ def setup_roles():
         codename__in=[
             'add_review', 'change_review', 'delete_review',
             'add_comment', 'change_comment', 'delete_comment'
-        ])
+        ]
+    )
     user_group.permissions.add(*user_permissions)
 
     moderator_permissions = Permission.objects.filter(
@@ -25,7 +26,8 @@ def setup_roles():
         codename__in=[
             'change_review', 'delete_review',
             'change_comment', 'delete_comment'
-        ])
+        ]
+    )
     moderator_group.permissions.add(*moderator_permissions)
 
     admin_permissions = Permission.objects.all()

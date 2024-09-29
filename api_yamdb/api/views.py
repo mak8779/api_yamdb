@@ -6,21 +6,19 @@ from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import filters, generics, mixins, status, viewsets
 from rest_framework.decorators import action
-from rest_framework.permissions import (
-    IsAuthenticated,
-    IsAuthenticatedOrReadOnly
-)
+from rest_framework.permissions import (IsAuthenticated,
+                                        IsAuthenticatedOrReadOnly)
 from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
 from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner
-from api.serializers import (CategorySerializer, GenreSerializer,
-                             MeSerializer, ReviewSerializer,
-                             CommentSerializer, SignupSerializer,
-                             TitleSerializer, TitleViewSerializer,
-                             TokenSerializer, UserSerializer)
-from reviews.models import Category, Genre, Title, Review
+from api.serializers import (CategorySerializer, CommentSerializer,
+                             GenreSerializer, MeSerializer, ReviewSerializer,
+                             SignupSerializer, TitleSerializer,
+                             TitleViewSerializer, TokenSerializer,
+                             UserSerializer)
+from reviews.models import Category, Genre, Review, Title
 
 User = get_user_model()
 
