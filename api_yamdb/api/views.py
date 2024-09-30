@@ -1,6 +1,6 @@
-import random
-
+from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.contrib.auth.tokens import default_token_generator
 from django.core.mail import send_mail
 from django.shortcuts import get_object_or_404
 from django_filters.rest_framework import DjangoFilterBackend
@@ -12,7 +12,7 @@ from rest_framework.response import Response
 from rest_framework_simplejwt.tokens import RefreshToken
 
 from api.filters import TitleFilter
-from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner
+from api.permissions import IsAdminOrReadOnly, IsModeratorOrOwner, IsAdmin
 from api.serializers import (CategorySerializer, CommentSerializer,
                              GenreSerializer, MeSerializer, ReviewSerializer,
                              SignupSerializer, TitleSerializer,
@@ -108,61 +108,23 @@ class SignupView(generics.CreateAPIView):
     serializer_class = SignupSerializer
 
     def post(self, request, *args, **kwargs):
-        required_fields = ['username', 'email']
-        missing_fields = [
-            field for field in required_fields if field not in request.data
-        ]
-
-        if missing_fields:
-            error_response = {
-                field: ['Обязательное поле.'] for field in missing_fields
-            }
-            return Response(error_response, status=status.HTTP_400_BAD_REQUEST)
-
         serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if serializer.is_valid(raise_exception=True):
-            username = serializer.validated_data['username']
+        username = serializer.validated_data['username']
+        email = serializer.validated_data['email']
 
-            if username.lower() == 'me':
-                return Response(
-                    {'username': ['Юзернейм "me" не разрешен.']},
-                    status=status.HTTP_400_BAD_REQUEST
-                )
+        user = User.objects.filter(username=username, email=email).first()
 
-            email = serializer.validated_data['email']
-
-            user = User.objects.filter(username=username, email=email).first()
-
-            if user:
-                confirmation_code = str(random.randint(100000, 999999))
-                user.confirmation_code = confirmation_code
-                user.save()
-
-                send_mail(
-                    'Код подтверждения',
-                    f'Ваш код подтверждения: {confirmation_code}',
-                    'noreply@yamdb.com',
-                    [email],
-                    fail_silently=False,
-                )
-
-                return Response(
-                    {'email': email, 'username': username},
-                    status=status.HTTP_200_OK
-                )
-
-            confirmation_code = str(random.randint(100000, 999999))
-            user = User.objects.create(
-                username=username,
-                email=email,
-                confirmation_code=confirmation_code
-            )
+        if user:
+            confirmation_code = default_token_generator.make_token(user)
+            user.confirmation_code = confirmation_code
+            user.save()
 
             send_mail(
                 'Код подтверждения',
                 f'Ваш код подтверждения: {confirmation_code}',
-                'noreply@yamdb.com',
+                settings.DEFAULT_FROM_EMAIL,
                 [email],
                 fail_silently=False,
             )
@@ -172,7 +134,26 @@ class SignupView(generics.CreateAPIView):
                 status=status.HTTP_200_OK
             )
 
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        user = User.objects.create(
+            username=username,
+            email=email,
+        )
+        confirmation_code = default_token_generator.make_token(user)
+        user.confirmation_code = confirmation_code
+        user.save()
+
+        send_mail(
+            'Код подтверждения',
+            f'Ваш код подтверждения: {confirmation_code}',
+            settings.DEFAULT_FROM_EMAIL,
+            [email],
+            fail_silently=False,
+        )
+
+        return Response(
+            {'email': email, 'username': username},
+            status=status.HTTP_200_OK
+        )
 
 
 class TokenView(generics.CreateAPIView):
@@ -180,42 +161,28 @@ class TokenView(generics.CreateAPIView):
 
     def post(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
 
-        if 'username' not in request.data:
-            return Response(
-                {'detail': 'Username - обязательное поле.'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        user = User.objects.get(username=serializer.validated_data['username'])
+        refresh = RefreshToken.for_user(user)
 
-        if serializer.is_valid(raise_exception=True):
-            user = User.objects.get(
-                username=serializer.validated_data['username']
-            )
-
-            refresh = RefreshToken.for_user(user)
-            return Response({
-                'access': str(refresh.access_token),
-                'refresh': str(refresh),
-            }, status=status.HTTP_200_OK)
-
-        return Response(serializer.errors, status=status.HTTP_400_BAD_REQUEST)
+        return Response({
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
+        }, status=status.HTTP_200_OK)
 
 
 class UserViewSet(viewsets.ModelViewSet):
     queryset = User.objects.all()
     serializer_class = UserSerializer
-    permission_classes = [IsAuthenticated, IsAdminOrReadOnly]
+    permission_classes = [IsAdmin]
     filter_backends = [filters.SearchFilter]
     search_fields = ['username']
 
     def list(self, request, *args, **kwargs):
-        if not request.user.is_admin:
-            return Response(status=status.HTTP_403_FORBIDDEN)
         return super().list(request, *args, **kwargs)
 
     def retrieve(self, request, *args, **kwargs):
-        if not request.user.is_admin:
-            return Response(status=status.HTTP_403_FORBIDDEN)
         username = kwargs.get('pk')
         user = get_object_or_404(User, username=username)
         serializer = self.get_serializer(user)
@@ -257,7 +224,7 @@ class UserViewSet(viewsets.ModelViewSet):
         elif request.method == 'PATCH':
             if 'role' in request.data:
                 return Response(
-                    {"detail": "Роль нельзя изменить."},
+                    {"detail": 'Роль нельзя изменить.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 

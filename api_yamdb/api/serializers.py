@@ -94,6 +94,11 @@ class SignupSerializer(serializers.Serializer):
         )]
     )
 
+    def validate_username(self, value):
+        if value.lower() == 'me':
+            raise serializers.ValidationError('Юзернейм "me" не разрешен.')
+        return value
+
     def validate(self, data):
         email_exists = User.objects.filter(email=data['email']).exists()
         username_exists = User.objects.filter(
