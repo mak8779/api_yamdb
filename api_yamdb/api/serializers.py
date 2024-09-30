@@ -73,7 +73,7 @@ class TitleViewSerializer(serializers.ModelSerializer):
         )
         model = Title
 
-    def get_rating(self, obj):
+    def get_rating(self, obj):  # Рейтинг рассчитываем во views, в queryset, через метод annotate
         reviews = obj.reviews.all()
         if reviews.exists():
             return reviews.aggregate(Avg('score'))['score__avg']
@@ -169,11 +169,16 @@ class ReviewSerializer(serializers.ModelSerializer):
 
     author = SlugRelatedField(slug_field='username', read_only=True)
 
+    """ Добавляем поле score
+    Добавляем валидацию так минимум 1 и максимум 10
+    https://www.django-rest-framework.org/api-guide/fields/#numeric-fields
+    Рекомендуется вынести цифры в константы и избегать использования "magic number". """
+
     def validate(self, data):
         """Запрещаем оставлять более одного отзыва на произведение."""
         if (
             self.context['request'].method == 'POST'
-            and Review.objects.filter(
+            and Review.objects.filter(  # Рекомендуется использовать related_name вместо фильтра для улучшения читаемости кода и более простого доступа к связанным объектам. Пример использования можно найти здесь: https://dvmn.org/encyclopedia/django_orm/how-to-check-out-related-name/
                 title=self.context['view'].kwargs['title_id'],
                 author=self.context['request'].user
             ).exists()
@@ -195,7 +200,7 @@ class ReviewSerializer(serializers.ModelSerializer):
         self.update_title_rating(review.title)
         return review
 
-    def update_title_rating(self, title):
+    def update_title_rating(self, title):  # Это не верно.
         """Обновление среднего рейтинга произведения."""
         reviews = title.reviews.all()
         rating = sum([review.score for review in reviews]) / reviews.count()
