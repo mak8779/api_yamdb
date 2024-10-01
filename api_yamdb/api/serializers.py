@@ -62,7 +62,7 @@ class TitleSerializer(serializers.ModelSerializer):
 class TitleViewSerializer(serializers.ModelSerializer):
     category = CategorySerializer(read_only=True)
     genre = GenreSerializer(read_only=True, many=True)
-    rating = serializers.SerializerMethodField()
+    rating = serializers.FloatField(source='average_rating', read_only=True)
 
     class Meta:
         fields = (
@@ -75,12 +75,6 @@ class TitleViewSerializer(serializers.ModelSerializer):
             'rating'
         )
         model = Title
-
-    def get_rating(self, obj):  # Рейтинг рассчитываем во views, в queryset, через метод annotate
-        reviews = obj.reviews.all()
-        if reviews.exists():
-            return reviews.aggregate(Avg('score'))['score__avg']
-        return None
 
 
 class SignupSerializer(serializers.Serializer):
@@ -176,7 +170,10 @@ class ReviewSerializer(serializers.ModelSerializer):
     """Сериализатор модели отзывов."""
 
     author = SlugRelatedField(slug_field='username', read_only=True)
-    score = serializers.IntegerField(min_value=SCORE_MIN_VALUE, max_value=SCORE_MAX_VALUE)
+    score = serializers.IntegerField(
+        min_value=SCORE_MIN_VALUE,
+        max_value=SCORE_MAX_VALUE
+    )
 
     def validate(self, data):
         """Запрещаем оставлять более одного отзыва на произведение."""
