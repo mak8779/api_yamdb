@@ -4,6 +4,9 @@ from django.db import models
 
 User = get_user_model()
 
+MIN_SCORE = 1
+MAX_SCORE = 10
+
 
 class Category(models.Model):
     """Модель категорий."""
@@ -82,36 +85,29 @@ class GenreTitle(models.Model):
         return f'{self.genre} {self.title}'
 
 
-""" Для всех моделей надо добавить class Meta и в нем добавить сортировку.
-Код стайл джанги такой, сначала идет класс Meta, а затем метод str
-    class Meta:
-        ...
-
-    def __str__(self):
-        ...  """
-
-
 class Review(models.Model):
     """Модель отзывов."""
 
     title = models.ForeignKey(
         Title,
         on_delete=models.CASCADE,
-        related_name='reviews'
-    )  # Если добавить verbose_name  для каждого поля модели, то в админке будет удобнее управлять моделями. Они должны быть на русском языке.
+        related_name='reviews',
+        verbose_name='Название'
+    )
     text = models.TextField(
         verbose_name='Текст отзыва'
     )
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='reviews'
+        related_name='reviews',
+        verbose_name='Автор'
     )
-    score = models.IntegerField(  # Тут лучше сделать PositiveSmallIntegerField
-        validators=[MinValueValidator(1),  # Рекомендуется вынести цифры в константы и избегать использования "magic number". Константы выносим на уровень модуля. Константы должны быть в верхнем регистре.
-                    MaxValueValidator(10)],  # Рекомендуется вынести цифры в константы и избегать использования "magic number". Константы выносим на уровень модуля. Константы должны быть в верхнем регистре.
+    score = models.PositiveSmallIntegerField(
+        validators=[MinValueValidator(MIN_SCORE),
+                    MaxValueValidator(MAX_SCORE)],
         verbose_name='Оценка'
-    )  
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации'
@@ -120,6 +116,8 @@ class Review(models.Model):
     class Meta:
         ordering = ['pub_date']
         unique_together = ('title', 'author')
+        verbose_name = 'Отзыв'
+        verbose_name_plural = 'Отзывы'
 
     def __str__(self):
         return self.text
@@ -131,14 +129,16 @@ class Comment(models.Model):
     review = models.ForeignKey(
         Review,
         on_delete=models.CASCADE,
-        related_name='comments'
-    )  # Если добавить verbose_name  для каждого поля модели, то в админке будет удобнее управлять моделями. Они должны быть на русском языке.
+        related_name='comments',
+        verbose_name='Отзыв'
+    )
     text = models.TextField(verbose_name='Текст комментария')
     author = models.ForeignKey(
         User,
         on_delete=models.CASCADE,
-        related_name='comments'
-    )  # Если добавить verbose_name  для каждого поля модели, то в админке будет удобнее управлять моделями. Они должны быть на русском языке.
+        related_name='comments',
+        verbose_name='Автор'
+    )
     pub_date = models.DateTimeField(
         auto_now_add=True,
         verbose_name='Дата публикации'
@@ -146,6 +146,8 @@ class Comment(models.Model):
 
     class Meta:
         ordering = ['pub_date']
+        verbose_name = 'Комментарий'
+        verbose_name_plural = 'Комментарии'
 
     def __str__(self):
         return self.text

@@ -75,12 +75,16 @@ class ReviewViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly, IsModeratorOrOwner)
     http_method_names = ['get', 'post', 'patch', 'delete']
 
+    def get_title(self):
+        """Получаем объект Title по его ID."""
+        return get_object_or_404(Title, id=self.kwargs['title_id'])
+
     def get_queryset(self):
-        title = get_object_or_404(Title, id=self.kwargs['title_id'])  # Выносим в отдельный метод.
+        title = self.get_title()
         return title.reviews.all()
 
     def perform_create(self, serializer):
-        title = get_object_or_404(Title, id=self.kwargs['title_id'])  # Выносим в отдельный метод.
+        title = self.get_title()
         serializer.save(author=self.request.user, title=title)
 
 
@@ -91,16 +95,22 @@ class CommentViewSet(viewsets.ModelViewSet):
     permission_classes = (IsAuthenticatedOrReadOnly, IsModeratorOrOwner)
     http_method_names = ['get', 'post', 'patch', 'delete']
 
+    def get_review(self):
+        """Получаем объект Review по его ID и title_id."""
+        review_id = self.kwargs.get('review_id')
+        title_id = self.kwargs.get('title_id')
+        return get_object_or_404(Review, id=review_id, title_id=title_id)
+
     def get_queryset(self):
-        review = get_object_or_404(Review, id=self.kwargs['review_id'])
-        """ Выносим в отдельный метод.
-        Надо получать review не только по полю  id, но и по полю title_id тоже верный. Тут и в perform_create
-        По id self.kwargs.get('review_id')
-        По title_id self.kwargs.get('title_id')"""
+        review = self.get_review()
         return review.comments.all()
 
     def perform_create(self, serializer):
-        review = get_object_or_404(Review, id=self.kwargs['review_id'])  # Выносим в отдельный метод.
+        review = self.get_review()
+        serializer.save(author=self.request.user, review=review)
+
+    def perform_create(self, serializer):
+        review = get_object_or_404(Review, id=self.kwargs['review_id'])
         serializer.save(author=self.request.user, review=review)
 
 
