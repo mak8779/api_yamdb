@@ -188,24 +188,6 @@ class ReviewSerializer(serializers.ModelSerializer):
             )
         return data
 
-    def create(self, validated_data):
-        """При создании отзыва обновляем рейтинг произведения."""
-        review = super().create(validated_data)
-        self.update_title_rating(review.title)
-        return review
-
-    def update(self, instance, validated_data):
-        """При обновлении отзыва обновляем рейтинг произведения."""
-        review = super().update(instance, validated_data)
-        self.update_title_rating(review.title)
-        return review
-
-    def update_title_rating(self, title):
-        """Обновление среднего рейтинга произведения."""
-        rating = title.reviews.aggregate(Avg('score'))['score__avg']
-        title.rating = rating if rating else 0
-        title.save()
-
     class Meta:
         fields = ('id', 'text', 'author', 'score', 'pub_date')
         model = Review

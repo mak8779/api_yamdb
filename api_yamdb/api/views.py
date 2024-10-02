@@ -125,28 +125,20 @@ class SignupView(generics.CreateAPIView):
 
         user = User.objects.filter(username=username, email=email).first()
 
-        if user:
-            confirmation_code = default_token_generator.make_token(user)
-            user.confirmation_code = confirmation_code
-            user.save()
-
-            send_mail(
-                'Код подтверждения',
-                f'Ваш код подтверждения: {confirmation_code}',
-                settings.DEFAULT_FROM_EMAIL,
-                [email],
-                fail_silently=False,
+        if not user:
+            user = User.objects.create(
+                username=username,
+                email=email,
             )
 
-            return Response(
-                {'email': email, 'username': username},
-                status=status.HTTP_200_OK
-            )
+        self.send_confirmation_code(user, email)
 
-        user = User.objects.create(
-            username=username,
-            email=email,
+        return Response(
+            {'email': email, 'username': username},
+            status=status.HTTP_200_OK
         )
+
+    def send_confirmation_code(self, user, email):
         confirmation_code = default_token_generator.make_token(user)
         user.confirmation_code = confirmation_code
         user.save()
@@ -157,11 +149,6 @@ class SignupView(generics.CreateAPIView):
             settings.DEFAULT_FROM_EMAIL,
             [email],
             fail_silently=False,
-        )
-
-        return Response(
-            {'email': email, 'username': username},
-            status=status.HTTP_200_OK
         )
 
 
@@ -230,10 +217,10 @@ class UserViewSet(viewsets.ModelViewSet):
         if request.method == 'GET':
             serializer = MeSerializer(request.user)
             return Response(serializer.data)
-        elif request.method == 'PATCH':
+        if request.method == 'PATCH':
             if 'role' in request.data:
                 return Response(
-                    {"detail": 'Роль нельзя изменить.'},
+                    {'detail': 'Роль нельзя изменить.'},
                     status=status.HTTP_400_BAD_REQUEST
                 )
 
